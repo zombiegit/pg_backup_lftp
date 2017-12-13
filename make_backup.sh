@@ -1,17 +1,19 @@
 #!/bin/bash
 
-. ./make_backup.config
-echo $DOCKER_CONTAINER_NAME
-
-CONTAINER_ID=$(docker ps | grep $DOCKER_CONTAINER_NAME | awk '{print $1}')
-if [ -z $CONTAINER_ID ] ;
-then echo "Cant find docker container with this name"; 
-     exit 0;
+if [ ${ENV_TYPE} != "prod" ]; then
+    exit 0;
 fi
 
-mkdir -p $DB_NAME/sqls
-mkdir -p $DB_NAME/files
+source /var/www/make_backup.config
 
-ssh $SSH_USER@$SSH_HOST "docker exec -t -u postgres $CONTAINER_ID pg_dump $DB_NAME" > $DB_NAME/sqls/dump_$DB_NAME_`date +%d-%m-%Y"_"%H_%M_%S`.sql
+if [ -z "$FTP_USER" ] || [ -z "$FTP_PASS" ] || [ -z "$FTP_HOST" ] || [ -z "$DB_NAME" ] || [ -z "$DB_USER" ] || [ -z "$DB_PASS" ] || [ -z "$UPLOADED_FILES_PATH" ] || [ -z "$LOGS_PATH" ]; then
+    echo "Insufficient parameters";
+    exit 0;
+fi
 
-rsync -p -t -r -e "ssh -p $SSH_PORT" --log-file=rsync.log $SSH_USER@$SSH_HOST:$UPLOADED_FILES_PATH ./$DB_NAME/files 
+DUMP_FILENAME=dump_$DB_NAME_`date +%d-%m-%Y"_"%H_%M_%S`.sql
+pg_dump --dbname=postgresql://$DB_USER:$DB_PASS@postgres:5432/$DB_NAME > /tmp/$DUMP_FILENAME
+
+lftp -c "set ssl:ca-file '/etc/ssl/certs/ca_certs.crt'; set ssl:check-hostname no; ftp:ssl-protect-data true; set xfer:log-file '$LOGS_PATH/lftp.log'; open -u $FTP_USER,$FTP_PASS $FTP_HOST; mkdir -p -f $PROJECT_NAME/sqls; put -O $PROJECT_NAME/sqls /tmp/$DUMP_FILENAME; mirror -c -e -R $UPLOADED_FILES_PATH $PROJECT_NAME/files; bye"
+
+rm /tmp/$DUMP_FILENAME
