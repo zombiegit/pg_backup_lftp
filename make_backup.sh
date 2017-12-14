@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ ${ENV_TYPE} != "prod" ]; then
+if [ "${ENV_TYPE}" != "prod" ]; then
     exit 0;
 fi
 
