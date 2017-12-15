@@ -7,3 +7,4 @@ FTP_HOST=
 PROJECT_NAME=
 UPLOADED_FILES_PATH=/var/www/uploads
 LOGS_PATH=/var/logs
+ENV_TYPE=dev

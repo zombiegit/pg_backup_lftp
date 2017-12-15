@@ -41,11 +41,21 @@ synchronize()
         exit 0;
     fi
 
-    lftp -c "set ssl:ca-file '/etc/ssl/certs/ca_certs.crt'; set ssl:check-hostname no; set xfer:log-file '$LOGS_PATH/lftp.log'; open -u $FTP_USER,$FTP_PASS $FTP_HOST; mget -O '/tmp' $PROJECT_NAME/sqls/$LAST_SQL_BACKUP; mirror -c $PROJECT_NAME/files $UPLOADED_FILES_PATH; bye"
+    echo -n "Static files will be downloaded from backup server. Existing tables from db '$DB_NAME' will be removed and replaced by schema and data from dump file '$LAST_SQL_BACKUP'. Are you sure? (type 'yes' to continue) > ";
+    read answer;
+    if [ "$answer" == 'yes' ]; then
 
-    psql -h postgres -p 5432 -U $DB_USER $DB_NAME < /tmp/$LAST_SQL_BACKUP
+        lftp -c "set ssl:ca-file '/etc/ssl/certs/ca_certs.crt'; set ssl:check-hostname no; set xfer:log-file '$LOGS_PATH/lftp.log'; open -u $FTP_USER,$FTP_PASS $FTP_HOST; mget -O '/tmp' $PROJECT_NAME/sqls/$LAST_SQL_BACKUP; mirror -c $PROJECT_NAME/files $UPLOADED_FILES_PATH; bye"
 
-    rm /tmp/$LAST_SQL_BACKUP
+        psql -h postgres -p 5432 -U $DB_USER $DB_NAME -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public; GRANT ALL ON SCHEMA public TO postgres; GRANT ALL ON SCHEMA public TO public;"
+
+        psql -h postgres -p 5432 -U $DB_USER $DB_NAME < /tmp/$LAST_SQL_BACKUP
+
+        rm /tmp/$LAST_SQL_BACKUP
+
+    else
+        echo "Abort"
+    fi
 }
 
 case $1 in
