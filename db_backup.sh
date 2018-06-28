@@ -37,7 +37,7 @@ make_backup()
 
 synchronize()
 {
-    LAST_SQL_BACKUP=$(echo "ls -lat dfm/sqls" | sftp -P 23 u130584@u130584.your-storagebox.de | sort | tail -4 | head -1 |  awk '{print $9}' | grep '.sql')
+    LAST_SQL_BACKUP=$(echo "ls -lat $PROJECT_NAME/sqls" | sftp -P 23 $CONNECT_STRING | sort | tail -4 | head -1 |  awk '{print $9}' | grep '.sql')
 
     if [ -z "$LAST_SQL_BACKUP" ]; then
         echo "Error get sql file path";
