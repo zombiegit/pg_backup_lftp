@@ -1,10 +1,8 @@
 DB_USER=
 DB_PASS=
 DB_NAME=
-FTP_USER=
-FTP_PASS=
-FTP_HOST=
 PROJECT_NAME=
+CONNECT_STRING= # like usernam@host.de
 UPLOADED_FILES_PATH=/var/www/uploads
 LOGS_PATH=/var/logs
 ENV_TYPE=dev
